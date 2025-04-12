@@ -3,6 +3,7 @@ package provider
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -12,18 +13,13 @@ import (
 	"todo-planning/internal/utility"
 )
 
-var mockOneClient *MockOneClient
-
 func NewMockOneClient(url string) *MockOneClient {
-	if mockOneClient == nil {
-		mockOneClient = &MockOneClient{
-			url: url,
-			Client: http.Client{
-				Timeout: 15 * time.Second,
-			},
-		}
+	return &MockOneClient{
+		url: url,
+		Client: http.Client{
+			Timeout: 15 * time.Second,
+		},
 	}
-	return mockOneClient
 }
 
 type MockOneClient struct {
@@ -44,9 +40,13 @@ func (moc *MockOneClient) FetchTasks() ([]model.Task, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected status code %d", resp.StatusCode)
 	}
+
 	var b []byte
-	if _, err := resp.Body.Read(b); err != nil {
+
+	b, err = io.ReadAll(resp.Body)
+	if err != nil {
 		logger.Error(err)
+
 		return nil, err
 	}
 

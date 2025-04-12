@@ -3,6 +3,7 @@ package provider
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -18,19 +19,15 @@ type MockTwoClient struct {
 	http.Client
 }
 
-var mockTwoClient *MockTwoClient
-
 func NewMockTwoClient(url string) *MockTwoClient {
-	if mockTwoClient == nil {
-		mockTwoClient = &MockTwoClient{
-			url: url,
-			Client: http.Client{
-				Timeout: time.Second * 15,
-			},
-		}
+	return &MockTwoClient{
+		url: url,
+		Client: http.Client{
+			Timeout: time.Second * 15,
+		},
 	}
-	return mockTwoClient
 }
+
 func (mtc *MockTwoClient) FetchTasks() ([]model.Task, error) {
 	var tasks []*MockTwoTask
 
@@ -45,8 +42,11 @@ func (mtc *MockTwoClient) FetchTasks() ([]model.Task, error) {
 		return nil, fmt.Errorf("unexpected status code %d", resp.StatusCode)
 	}
 	var b []byte
-	if _, err := resp.Body.Read(b); err != nil {
+
+	b, err = io.ReadAll(resp.Body)
+	if err != nil {
 		logger.Error(err)
+
 		return nil, err
 	}
 
