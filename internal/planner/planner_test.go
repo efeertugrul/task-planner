@@ -80,6 +80,7 @@ func TestPlanner_Plan(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			print(tt.name)
 			// Create mock services
 			taskService := &mockTaskService{
 				tasks: tt.tasks,
@@ -91,7 +92,7 @@ func TestPlanner_Plan(t *testing.T) {
 			}
 
 			// Create planner with mock services
-			planner := NewPlanner(PlanningOptions{
+			planner := newPlanner(PlanningOptions{
 				TaskService:       taskService,
 				DeveloperService:  developerService,
 				ChannelManager:    NewDefaultChannelManager(),
@@ -100,15 +101,13 @@ func TestPlanner_Plan(t *testing.T) {
 				TaskSorter:        nil,
 			})
 
-			planner.RunRoutines()
 			// Run planning
-			assignments := planner.Plan()
+			assignments, err := planner.Plan()
 
 			// Verify results
-			if tt.expectError {
-				if assignments != nil {
-					t.Error("expected nil assignments on error")
-				}
+			if err != nil && !tt.expectError {
+				t.Error("expected  error")
+
 				return
 			}
 

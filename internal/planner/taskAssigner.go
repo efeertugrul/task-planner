@@ -37,6 +37,8 @@ func (ta *TaskAssigner) AssignTask(task model.Task) *model.Assignment {
 		DeveloperID:     bestDev.Developer.ID,
 		WeekNumber:      week,
 		CalculatedHours: hours,
+		Task:            task,
+		Developer:       bestDev.Developer,
 	}
 }
 
@@ -52,7 +54,9 @@ func (ta *TaskAssigner) FindBestFit(task model.Task) (*devState, int, float64) {
 
 	for _, dev := range ta.devStates {
 		hoursNeeded := CalculateHoursNeeded(taskEffort, dev.Developer)
-
+		if hoursNeeded > MaxHoursPerWeek {
+			continue
+		}
 		// Find the first week where the task can fit
 		week := 1
 		for {

@@ -1,6 +1,9 @@
 package planner
 
 import (
+	"fmt"
+	"sync"
+	"time"
 	"todo-planning/internal/logger"
 	"todo-planning/internal/model"
 
@@ -26,6 +29,7 @@ type Planner struct {
 	assignmentService AssignmentService
 	taskSorter        TaskSorter
 	channelManager    ChannelManager
+	mu                sync.Mutex
 }
 
 type PlanningOptions struct {
@@ -38,8 +42,9 @@ type PlanningOptions struct {
 	ChannelManager    ChannelManager
 }
 
-func NewPlanner(options PlanningOptions) *Planner {
+var planner *Planner
 
+func newPlanner(options PlanningOptions) *Planner {
 	taskSorter := options.TaskSorter
 	if taskSorter == nil {
 		taskSorter = &DefaultTaskSorter{}
@@ -59,16 +64,36 @@ func NewPlanner(options PlanningOptions) *Planner {
 	}
 }
 
+func NewPlanner(options PlanningOptions) *Planner {
+	if planner == nil {
+		planner = newPlanner(options)
+	}
+
+	return planner
+}
+
 func (p *Planner) RunRoutines() {
 	go p.channelManager.HandleChannels()
 }
 
-func (p *Planner) Plan() []model.Assignment {
+func (p *Planner) Plan() ([]model.Assignment, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.RunRoutines()
+
+	assignments, err := p.plan()
+	p.Stop()
+
+	return assignments, err
+}
+
+func (p *Planner) plan() ([]model.Assignment, error) {
 	// Fetch developers first
 	developers, err := p.developerService.GetDevelopers()
 	if err != nil {
 		logger.Error(err)
-		return nil
+		return nil, fmt.Errorf("failed to get developers: %w", err)
 	}
 	p.channelManager.SendDevelopers(developers)
 
@@ -76,12 +101,15 @@ func (p *Planner) Plan() []model.Assignment {
 	tasks, err := p.taskService.GetTasks()
 	if err != nil {
 		logger.Error(err)
-		return nil
+		return nil, fmt.Errorf("failed to get tasks: %w", err)
+	}
+
+	if len(tasks) == 0 {
+		return nil, nil
 	}
 
 	// Sort tasks using the configured sorter
 	sortedTasks := p.taskSorter.Sort(tasks)
-
 	// Send tasks in batches
 	var assignments []model.Assignment
 	for _, task := range sortedTasks {
@@ -90,5 +118,10 @@ func (p *Planner) Plan() []model.Assignment {
 		assignments = append(assignments, currentAssignments...)
 	}
 
-	return assignments
+	return assignments, nil
+}
+
+func (p *Planner) Stop() {
+	p.channelManager.GetDoneChannel() <- true
+	time.Sleep(100 * time.Millisecond)
 }

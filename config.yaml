@@ -1,0 +1,16 @@
+# Task Planner Configuration
+
+database:
+  driver: "sqlite"
+  host: "localhost"
+  port: 0
+  name: "taskplanner"
+  user: ""
+  password: ""
+  sslmode: ""
+
+provider:
+  mock-one:
+    url: ""
+  mock-two:
+    url: ""

@@ -89,25 +89,27 @@ func (cm *DefaultChannelManager) HandleChannels() {
 
 				if taskAssigner == nil {
 					taskBuffer = append(taskBuffer, currentTask)
-					continue
 				} else {
 					for len(taskBuffer) > 0 {
 						bTask := taskBuffer[0]
 						taskBuffer = taskBuffer[1:]
 						if assignment := taskAssigner.AssignTask(bTask); assignment != nil {
 							assignments = append(assignments, *assignment)
+						} else {
+							logger.Info("Assignment can't be made to any Developer for task: ", bTask.Source+"-"+bTask.ExternalID, " consider splitting it into 2 issues")
 						}
 					}
 
 					if assignment := taskAssigner.AssignTask(currentTask); assignment != nil {
 						assignments = append(assignments, *assignment)
+					} else {
+						logger.Info("Assignment can't be made to any Developer for task: ", currentTask.Source+"-"+currentTask.ExternalID, " consider splitting it into 2 issues")
 					}
-
-					logger.Info("Sending assignments")
-					cm.assignmentsChannel <- assignments
 				}
-			}
 
+				logger.Info("Sending assignments")
+				cm.assignmentsChannel <- assignments
+			}
 		case developers := <-cm.developerChannel:
 			logger.Info("Received developers", developers)
 			taskAssigner = NewTaskAssigner(developers)

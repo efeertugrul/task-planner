@@ -10,7 +10,6 @@ import (
 
 // Config holds all configuration for the application
 type Config struct {
-	Server         ServerConfig   `yaml:"server"`
 	Database       DatabaseConfig `yaml:"database"`
 	ProviderConfig ProviderConfig `yaml:"provider"`
 }
