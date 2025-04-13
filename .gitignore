@@ -23,3 +23,14 @@ go.work.sum
 
 # env file
 .env
+
+# node_modules
+node_modules
+
+.vscode
+
+# web
+web/node_modules
+web/.vscode
+**/node_modules/
+**/vendor/
