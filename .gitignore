@@ -32,3 +32,5 @@ node_modules
 # web
 web/node_modules
 web/.vscode
+**/node_modules/
+**/vendor/
