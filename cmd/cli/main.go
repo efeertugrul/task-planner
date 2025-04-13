@@ -101,6 +101,11 @@ func initializeDatabase(force bool) {
 			logger.Error(fmt.Errorf("failed to delete developers: %w", err))
 			os.Exit(1)
 		}
+
+		if err := database.Exec("DELETE FROM tasks").Error; err != nil {
+			logger.Error(fmt.Errorf("failed to delete tasks: %w", err))
+			os.Exit(1)
+		}
 	}
 
 	// Create developers
